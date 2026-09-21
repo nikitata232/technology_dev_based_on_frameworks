@@ -14,7 +14,7 @@ def check_location_availability(is_busy):
 
 def get_days_until_shooting(shoot_date):
     today = date(2026, 9, 14)
-    delta = shoot_date - today
+    delta = today - shoot_date
     return delta.days
 
 def get_shooting_status(days_left):
