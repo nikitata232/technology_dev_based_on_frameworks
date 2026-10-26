@@ -1,0 +1,86 @@
+/* Собственные стили КиноПлан (поверх Bootstrap). */
+
+:root {
+    --kp-accent: #e63946;
+    --kp-dark: #212529;
+    --kp-muted-bg: #f4f5f7;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--kp-muted-bg);
+}
+
+main {
+    flex: 1;
+}
+
+/* Шапка и логотип */
+.kp-navbar {
+    background-color: var(--kp-dark);
+    border-bottom: 4px solid var(--kp-accent);
+}
+
+.kp-logo {
+    width: 36px;
+    height: auto;
+}
+
+.kp-navbar .nav-link.active {
+    color: #fff;
+    border-bottom: 2px solid var(--kp-accent);
+}
+
+/* Главная страница */
+.kp-hero {
+    padding: 2rem;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--kp-dark), #3a3f44);
+    color: #fff;
+}
+
+.kp-stat-value {
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: var(--kp-accent);
+}
+
+/* Карточки фильмов, локаций, съёмок */
+.kp-card {
+    border: none;
+    border-left: 4px solid var(--kp-accent);
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.film-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+/* Статусы съёмок */
+.kp-status {
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.kp-status-active::before {
+    content: "● ";
+}
+
+.kp-cancelled {
+    opacity: 0.6;
+}
+
+.kp-cancelled .kp-status-cancelled {
+    text-decoration: line-through;
+}
+
+/* Подвал */
+.kp-footer {
+    padding: 1rem 0;
+    color: #6c757d;
+    border-top: 1px solid #dee2e6;
+    background-color: #fff;
+}

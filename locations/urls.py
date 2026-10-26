@@ -2,11 +2,9 @@ from django.urls import path
 
 from . import views
 
+app_name = "locations"
+
 urlpatterns = [
-    path("", views.locations, name="locations"),
-    path(
-        "<int:location_id>/",
-        views.location_detail,
-        name="location_detail",
-    ),
+    path("", views.locations, name="list"),
+    path("<int:location_id>/", views.location_detail, name="detail"),
 ]

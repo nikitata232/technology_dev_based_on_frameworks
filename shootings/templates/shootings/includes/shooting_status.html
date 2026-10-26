@@ -1,0 +1,7 @@
+{% if shooting.is_cancelled %}
+    <span class="badge bg-secondary kp-status kp-status-cancelled">{{ shooting.status }}</span>
+{% elif shooting.days_until < 0 %}
+    <span class="badge bg-dark kp-status kp-status-past">{{ shooting.status }}</span>
+{% else %}
+    <span class="badge bg-success kp-status kp-status-active">{{ shooting.status }}</span>
+{% endif %}

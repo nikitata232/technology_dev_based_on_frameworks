@@ -1,0 +1,16 @@
+<article class="card kp-card film-card mb-3">
+    <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+            <h2 class="card-title h5 mb-1">«{{ film.title|default:"Без названия" }}»</h2>
+            <p class="card-text text-muted mb-0">
+                Режиссёр: {{ film.director|default:"не указан" }}
+            </p>
+        </div>
+        <div class="text-end">
+            <span class="badge bg-primary mb-2">сцен: {{ film.scenes|length }}</span><br>
+            <a href="{% url 'films:detail' film.id %}" class="btn btn-sm btn-outline-primary">
+                Подробнее
+            </a>
+        </div>
+    </div>
+</article>

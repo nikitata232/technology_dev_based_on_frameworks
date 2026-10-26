@@ -1,0 +1,9 @@
+<tr>
+    <td>
+        <a href="{% url 'locations:detail' location.id %}">
+            {{ location.name|default:"Без названия" }}
+        </a>
+    </td>
+    <td>{{ location.address|default:"адрес не указан" }}</td>
+    <td>{{ location.capacity }}</td>
+</tr>

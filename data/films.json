@@ -13,6 +13,33 @@
                 "number": 2,
                 "description": "Разговор в купе",
                 "crew_size": 10
+            },
+            {
+                "number": 3,
+                "description": "Погоня по перрону",
+                "crew_size": 25
+            }
+        ]
+    },
+    {
+        "id": 2,
+        "title": "Северное сияние",
+        "director": "М. Орлова",
+        "scenes": [
+            {
+                "number": 1,
+                "description": "Пролог в павильоне",
+                "crew_size": 60
+            },
+            {
+                "number": 2,
+                "description": "Ночной разговор на кухне",
+                "crew_size": 8
+            },
+            {
+                "number": 3,
+                "description": "Прощание на вокзале",
+                "crew_size": 30
             }
         ]
     }

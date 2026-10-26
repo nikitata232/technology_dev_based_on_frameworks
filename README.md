@@ -26,19 +26,22 @@
 
 - Python 3.11;
 - Django 5.2 — веб-фреймворк;
-- HTML, CSS и Bootstrap 5.3 — разметка и оформление страниц;
+- Django Template Language (DTL) — шаблоны страниц;
+- HTML5, CSS3, JavaScript — разметка, собственное оформление и поведение интерфейса;
+- Bootstrap 5.3 — базовая вёрстка;
+- JSON — хранение данных;
 - pytest — автоматизированные тесты;
 - flake8 — проверка качества кода.
 
 ## Возможности
 
-Веб-интерфейс (ПР5):
+Веб-интерфейс (ПР5–ПР6, страницы формируются Django-шаблонами):
 
-- главная страница со сводкой (фильмы, локации, активные съёмки) и навигацией;
+- главная страница со сводкой (фильмы, локации, активные съёмки), ближайшими съёмками и навигацией;
 - список фильмов и страница фильма со сценами и его съёмками;
 - список локаций (по убыванию вместимости) и страница локации;
 - проверка занятости локации на любую дату (`/locations/<id>/?date=ГГГГ-ММ-ДД`);
-- график съёмок со статусами и страница отдельной съёмки;
+- график съёмок со статусами (активна / прошла / отменена), кнопка «Скрыть отменённые» (JavaScript) и страница отдельной съёмки;
 - собственная страница ошибки 404, ответ 404 для несуществующих объектов.
 
 Консольная версия (`main.py`, сохранена с ПР2–ПР3):
@@ -91,19 +94,74 @@ Film ──(scenes)──> Scene
 
 ## Страницы веб-интерфейса
 
-| URL | view-функция | Назначение |
-|---|---|---|
-| `/` | `homepage.views.index` | главная страница |
-| `/films/` | `films.views.films` | список фильмов |
-| `/films/<int:film_id>/` | `films.views.film_detail` | фильм, сцены, его съёмки |
-| `/locations/` | `locations.views.locations` | таблица локаций |
-| `/locations/<int:location_id>/` | `locations.views.location_detail` | карточка локации, проверка даты |
-| `/shootings/` | `shootings.views.shootings` | график съёмок |
-| `/shootings/<int:shooting_id>/` | `shootings.views.shooting_detail` | карточка съёмки |
+| URL | Имя маршрута | view-функция | Шаблон |
+|---|---|---|---|
+| `/` | `homepage:index` | `homepage.views.index` | `homepage/index.html` |
+| `/films/` | `films:list` | `films.views.films` | `films/film_list.html` |
+| `/films/<int:film_id>/` | `films:detail` | `films.views.film_detail` | `films/film_detail.html` |
+| `/locations/` | `locations:list` | `locations.views.locations` | `locations/location_list.html` |
+| `/locations/<int:location_id>/` | `locations:detail` | `locations.views.location_detail` | `locations/location_detail.html` |
+| `/shootings/` | `shootings:list` | `shootings.views.shootings` | `shootings/shooting_list.html` |
+| `/shootings/<int:shooting_id>/` | `shootings:detail` | `shootings.views.shooting_detail` | `shootings/shooting_detail.html` |
 
-Если объект не найден, страница возвращает код 404. Для неизвестных адресов при `DEBUG = False` показывается собственная страница (`handler404 = "homepage.views.page_not_found"`).
+Если объект не найден, view передаёт в шаблон `None`, шаблон выводит сообщение «… не найден» через `{% if %}/{% else %}`, а ответ получает код 404 (`render(..., status=404)`). Для неизвестных адресов при `DEBUG = False` показывается собственная страница `homepage/404.html` (`handler404 = "homepage.views.page_not_found"`).
 
-Общий HTML-каркас (кодировка, Bootstrap, навигация) формирует функция `page()` в `homepage/views.py`; остальные приложения импортируют её.
+Представления только подготавливают данные и вызывают `render(request, шаблон, context)`. HTML в Python-коде не формируется, функция `page()` из ПР5 удалена.
+
+## Django Template Language
+
+### Базовый шаблон и наследование
+
+`templates/base.html` (каталог шаблонов уровня проекта, подключён в `settings.py` через `TEMPLATES["DIRS"] = [BASE_DIR / "templates"]`) содержит общую структуру страницы: `DOCTYPE`, `<head>`, Bootstrap, собственный CSS, навигацию, подвал и подключение JavaScript. Дочерние шаблоны начинаются с `{% extends "base.html" %}` и переопределяют блоки:
+
+- `{% block title %}` — заголовок вкладки;
+- `{% block content %}` — содержимое страницы.
+
+### Включаемые шаблоны (`{% include %}`)
+
+| Фрагмент | Где используется |
+|---|---|
+| `templates/includes/navigation.html` | `base.html` — меню на всех страницах |
+| `films/includes/film_card.html` | список фильмов |
+| `locations/includes/location_row.html` | таблица локаций |
+| `shootings/includes/shooting_status.html` | бейдж статуса съёмки — график, карточка съёмки, списки съёмок |
+| `shootings/includes/shooting_item.html` | строка съёмки — главная, страница фильма, страница локации |
+
+### Контекст, циклы и условия
+
+Данные передаются словарём `context`, например в `films.views.films`:
+
+```python
+context = {"films": load_films()}
+return render(request, "films/film_list.html", context)
+```
+
+В шаблоне: `{% for film in films %} … {% empty %} Фильмов нет. {% endfor %}`. Условия `{% if %}/{% elif %}/{% else %}` выбирают статус съёмки (`shooting.is_cancelled`, `shooting.days_until < 0`), занятость локации (`available`), сообщение об отсутствии объекта, активный пункт меню.
+
+### Фильтры
+
+- `{{ films|length }}`, `{{ film.scenes|length }}` — количество элементов;
+- `{{ film.director|default:"не указан" }}` — значение по умолчанию;
+- `{{ shooting.shooting_date|date:"d.m.Y" }}` — форматирование даты (дата съёмки хранится в объекте как `date`);
+- `{{ upcoming_shootings|slice:":3" }}` — три ближайшие съёмки на главной.
+
+Фильтры отвечают только за представление данных, бизнес-логика (статус, занятость локации) остаётся в классах `models/`.
+
+### Именованные URL и пространства имён
+
+В `urls.py` каждого приложения задан `app_name` (`homepage`, `films`, `locations`, `shootings`), маршруты названы `list` и `detail`. Ссылки в шаблонах строятся тегом `{% url %}`: `{% url 'films:list' %}`, `{% url 'shootings:detail' shooting.id %}`. Жёстко прописанных адресов в шаблонах нет.
+
+### Статические файлы
+
+Каталог `homepage/static/homepage/`, подключение через `{% load static %}` и `{% static '…' %}`:
+
+| Файл | Назначение |
+|---|---|
+| `css/style.css` | собственное оформление: шапка с акцентной полосой, карточки `kp-card`, статусы `kp-status-*`, подвал |
+| `js/main.js` | текущий год в подвале, кнопка «Скрыть отменённые» на графике съёмок |
+| `img/logo.png` | логотип (хлопушка) в навигации |
+
+Проверка: `python manage.py findstatic homepage/img/logo.png`.
 
 ## Структура проекта
 
@@ -121,10 +179,22 @@ film_scheduler/
 │   ├── urls.py           — корневые маршруты, handler404
 │   ├── asgi.py
 │   └── wsgi.py
-├── homepage/             — главная страница, page(), страница 404
-├── films/                — страницы фильмов (views.py, urls.py)
-├── locations/            — страницы локаций (views.py, urls.py)
-├── shootings/            — страницы съёмок (views.py, urls.py)
+├── templates/            — шаблоны уровня проекта
+│   ├── base.html
+│   └── includes/navigation.html
+├── homepage/             — главная страница и страница 404
+│   ├── static/homepage/  — css/style.css, js/main.js, img/logo.png
+│   └── templates/homepage/  — index.html, 404.html
+├── films/                — страницы фильмов
+│   └── templates/films/  — film_list.html, film_detail.html,
+│                           includes/film_card.html
+├── locations/            — страницы локаций
+│   └── templates/locations/  — location_list.html, location_detail.html,
+│                               includes/location_row.html
+├── shootings/            — страницы съёмок
+│   └── templates/shootings/  — shooting_list.html, shooting_detail.html,
+│                               includes/shooting_status.html,
+│                               includes/shooting_item.html
 ├── models/               — классы предметной области (ПР3)
 │   ├── __init__.py
 │   ├── base.py           — Entity
@@ -142,10 +212,12 @@ film_scheduler/
     ├── test_films.py
     ├── test_shootings.py
     ├── test_storage.py
-    └── test_views.py     — тесты веб-страниц
+    └── test_views.py     — тесты веб-страниц и шаблонов
 ```
 
 Каталог пакета `models/` (классы ПР3) не следует путать с файлами `models.py` Django-приложений: они пока пустые, Django-модели появятся при переходе на ORM.
+
+Данные по-прежнему хранятся в JSON-файлах и загружаются через `storage.py`; Django ORM, база данных приложения и формы Django пока не используются.
 
 ## Формат данных
 
@@ -198,14 +270,13 @@ python main.py
 
 ```text
 pytest -v
-flake8
+flake8 . --extend-exclude=venv
 python manage.py check
 ```
 
 ## План развития
 
-- перенос `Location`, `Film`, `Scene`, `Shooting` в модели Django ORM и подключение базы данных;
-- переход на шаблоны (`templates/`) вместо функции `page()`;
+- переход от JSON-файлов к реляционной базе данных (SQL), затем к моделям Django ORM;
 - формы создания фильмов, локаций и съёмок, отмена съёмки из веб-интерфейса;
 - пользователи и разграничение доступа;
 - разработка API, контейнеризация, CI/CD.
@@ -272,3 +343,17 @@ python manage.py check
 - **консольная версия сохранена:** `main.py`, JSON-хранилище и все тесты ПР3 работают без изменений;
 - **окружение:** Python 3.11, в `requirements.txt` добавлен `Django==5.2.*`, `db.sqlite3` добавлен в `.gitignore`; сгенерированные заготовки очищены от неиспользуемых импортов для flake8;
 - **тесты:** добавлен `tests/test_views.py` (тестовый клиент Django): коды ответов страниц, отображение данных, проверка даты, 404 (всего 41 тест).
+
+### ПР6. Шаблоны Django и проектная разработка
+
+Что изменилось по сравнению с ПР5:
+
+- **HTML вынесен из Python в шаблоны:** все view-функции вызывают `render(request, шаблон, context)`; функции `page()` и `not_found_page()` удалены из `homepage/views.py`;
+- **базовый шаблон:** `templates/base.html` с блоками `title` и `content`, каталог `templates/` подключён в `TEMPLATES["DIRS"]`; все страницы наследуют его через `{% extends %}`;
+- **включаемые шаблоны:** навигация, карточка фильма, строка локации, бейдж статуса и строка съёмки вынесены в `includes/` и подключаются через `{% include %}` (статус съёмки используется на пяти страницах);
+- **контекст, циклы, условия:** данные передаются через `context`, списки выводятся `{% for %}` с `{% empty %}`, статусы и «объект не найден» — через `{% if %}`; при отсутствии объекта ответ по-прежнему имеет код 404;
+- **именованные URL:** у приложений появились `app_name`, маршруты переименованы в `list`/`detail`, все ссылки строятся тегом `{% url %}`;
+- **фильтры:** `length`, `default`, `date:"d.m.Y"`, `slice`;
+- **статические файлы:** собственные `style.css`, `main.js` (год в подвале, скрытие отменённых съёмок) и `logo.png`; Bootstrap оставлен для базовой вёрстки;
+- **данные:** в JSON добавлены второй фильм, четвёртая локация и будущие съёмки, чтобы на страницах были видны все статусы;
+- **тесты:** в `tests/test_views.py` добавлены проверки используемых шаблонов и include, именованных URL, статических файлов, фильтров, пустых коллекций и удаления `page()` (всего 58 тестов).

@@ -1,0 +1,11 @@
+<a
+    href="{% url 'shootings:detail' shooting.id %}"
+    class="list-group-item list-group-item-action d-flex justify-content-between align-items-center{% if shooting.is_cancelled %} kp-cancelled{% endif %}"
+>
+    <span>
+        <strong>{{ shooting.shooting_date|date:"d.m.Y" }}</strong> —
+        «{{ shooting.film.title }}», сцена №{{ shooting.scene.number }},
+        {{ shooting.location.name }}
+    </span>
+    {% include "shootings/includes/shooting_status.html" %}
+</a>

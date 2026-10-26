@@ -1,0 +1,29 @@
+{% load static %}
+<nav class="navbar navbar-expand kp-navbar mb-4" data-bs-theme="dark">
+    <div class="container">
+        <a class="navbar-brand d-flex align-items-center" href="{% url 'homepage:index' %}">
+            <img
+                src="{% static 'homepage/img/logo.png' %}"
+                alt="КиноПлан"
+                class="kp-logo me-2"
+            >
+            КиноПлан
+        </a>
+        {% with section=request.resolver_match.app_name %}
+            <div class="navbar-nav">
+                <a
+                    class="nav-link{% if section == 'films' %} active{% endif %}"
+                    href="{% url 'films:list' %}"
+                >Фильмы</a>
+                <a
+                    class="nav-link{% if section == 'locations' %} active{% endif %}"
+                    href="{% url 'locations:list' %}"
+                >Локации</a>
+                <a
+                    class="nav-link{% if section == 'shootings' %} active{% endif %}"
+                    href="{% url 'shootings:list' %}"
+                >График съёмок</a>
+            </div>
+        {% endwith %}
+    </div>
+</nav>

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Главная — КиноПлан{% endblock %}
+
+{% block content %}
+    <section class="kp-hero mb-4">
+        <h1 class="display-5">КиноПлан</h1>
+        <p class="lead mb-0">
+            Сервис планирования киносъёмок: фильмы и сцены, локации
+            и график съёмок с контролем занятости локаций.
+        </p>
+    </section>
+
+    <div class="row g-3 mb-4">
+        <div class="col-sm-4">
+            <div class="card kp-stat text-center">
+                <div class="card-body">
+                    <div class="kp-stat-value">{{ films|length }}</div>
+                    фильмов
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="card kp-stat text-center">
+                <div class="card-body">
+                    <div class="kp-stat-value">{{ locations|length }}</div>
+                    локаций
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="card kp-stat text-center">
+                <div class="card-body">
+                    <div class="kp-stat-value">{{ active_shootings|length }}</div>
+                    активных съёмок
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h2 class="h4">Ближайшие съёмки</h2>
+    <div class="list-group mb-4">
+        {% for shooting in upcoming_shootings|slice:":3" %}
+            {% include "shootings/includes/shooting_item.html" %}
+        {% empty %}
+            <p>Ближайших съёмок нет.</p>
+        {% endfor %}
+    </div>
+
+    <p>Основные разделы:</p>
+    <a href="{% url 'films:list' %}" class="btn btn-primary me-2">Фильмы</a>
+    <a href="{% url 'locations:list' %}" class="btn btn-secondary me-2">Локации</a>
+    <a href="{% url 'shootings:list' %}" class="btn btn-outline-dark">График съёмок</a>
+{% endblock %}

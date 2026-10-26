@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if location %}
+        {{ location.name }} — КиноПлан
+    {% else %}
+        Локация не найдена — КиноПлан
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    {% if location %}
+        {% if bad_date %}
+            <div class="alert alert-warning">Некорректная дата, показана текущая.</div>
+        {% endif %}
+
+        <div class="card kp-card mb-4">
+            <div class="card-body">
+                <h1 class="card-title h3">{{ location.name }}</h1>
+                <p class="card-text"><strong>ID:</strong> {{ location.id }}</p>
+                <p class="card-text">
+                    <strong>Адрес:</strong>
+                    {{ location.address|default:"не указан" }}
+                </p>
+                <p class="card-text">
+                    <strong>Вместимость:</strong>
+                    {{ location.capacity }} чел.
+                </p>
+
+                <form method="get" class="row g-2 align-items-center mb-2">
+                    <div class="col-auto">
+                        <input
+                            type="date"
+                            name="date"
+                            class="form-control"
+                            value="{{ check_date|date:'Y-m-d' }}"
+                        >
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-primary">Проверить дату</button>
+                    </div>
+                </form>
+
+                <p class="card-text">
+                    {{ check_date|date:"d.m.Y" }}:
+                    {% if available %}
+                        <span class="badge bg-success">{{ availability }}</span>
+                    {% else %}
+                        <span class="badge bg-danger">{{ availability }}</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        <h2 class="h4">Съёмки на этой локации</h2>
+        <div class="list-group">
+            {% for shooting in location_shootings %}
+                {% include "shootings/includes/shooting_item.html" %}
+            {% empty %}
+                <p>Съёмок не назначено.</p>
+            {% endfor %}
+        </div>
+    {% else %}
+        <h1 class="text-danger">Локация не найдена</h1>
+        <p>Локация с указанным идентификатором отсутствует.</p>
+    {% endif %}
+
+    <a href="{% url 'locations:list' %}" class="btn btn-outline-secondary mt-3">
+        ← к списку локаций
+    </a>
+{% endblock %}

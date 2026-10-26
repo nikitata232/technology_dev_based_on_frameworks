@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}График съёмок — КиноПлан{% endblock %}
+
+{% block content %}
+    <h1>График съёмок</h1>
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <p class="text-muted mb-0">Всего съёмок: {{ shootings|length }}</p>
+        <button type="button" id="toggle-cancelled" class="btn btn-sm btn-outline-secondary">
+            Скрыть отменённые
+        </button>
+    </div>
+
+    <table class="table table-hover align-middle">
+        <thead>
+            <tr>
+                <th>Дата</th>
+                <th>Фильм</th>
+                <th>Сцена</th>
+                <th>Локация</th>
+                <th>Статус</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for shooting in shootings %}
+                <tr{% if shooting.is_cancelled %} class="kp-cancelled"{% endif %}>
+                    <td>
+                        <a href="{% url 'shootings:detail' shooting.id %}">
+                            {{ shooting.shooting_date|date:"d.m.Y" }}
+                        </a>
+                    </td>
+                    <td>{{ shooting.film.title }}</td>
+                    <td>№{{ shooting.scene.number }}</td>
+                    <td>{{ shooting.location.name }}</td>
+                    <td>{% include "shootings/includes/shooting_status.html" %}</td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="5">Съёмки ещё не назначены.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

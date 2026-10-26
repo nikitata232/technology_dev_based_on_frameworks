@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if shooting %}
+        Съёмка №{{ shooting.id }} — КиноПлан
+    {% else %}
+        Съёмка не найдена — КиноПлан
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    {% if shooting %}
+        <div class="card kp-card">
+            <div class="card-body">
+                <h1 class="card-title h3">Съёмка №{{ shooting.id }}</h1>
+                <p class="card-text">
+                    <strong>Дата:</strong>
+                    {{ shooting.shooting_date|date:"d.m.Y" }}
+                </p>
+                <p class="card-text">
+                    <strong>Фильм:</strong>
+                    <a href="{% url 'films:detail' shooting.film.id %}">{{ shooting.film }}</a>
+                </p>
+                <p class="card-text">
+                    <strong>Сцена:</strong>
+                    {{ shooting.scene }}
+                </p>
+                <p class="card-text">
+                    <strong>Локация:</strong>
+                    <a href="{% url 'locations:detail' shooting.location.id %}">{{ shooting.location }}</a>
+                </p>
+                <p class="card-text">
+                    <strong>Статус:</strong>
+                    {% include "shootings/includes/shooting_status.html" %}
+                </p>
+            </div>
+        </div>
+    {% else %}
+        <h1 class="text-danger">Съёмка не найдена</h1>
+        <p>Съёмка с указанным идентификатором отсутствует.</p>
+    {% endif %}
+
+    <a href="{% url 'shootings:list' %}" class="btn btn-outline-secondary mt-3">
+        ← к графику съёмок
+    </a>
+{% endblock %}

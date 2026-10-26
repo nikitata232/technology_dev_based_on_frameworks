@@ -14,5 +14,45 @@
         "location_id": 3,
         "shooting_date": "2026-10-22",
         "is_cancelled": true
+    },
+    {
+        "id": 3,
+        "film_id": 1,
+        "scene_number": 3,
+        "location_id": 1,
+        "shooting_date": "2026-11-10",
+        "is_cancelled": false
+    },
+    {
+        "id": 4,
+        "film_id": 2,
+        "scene_number": 1,
+        "location_id": 2,
+        "shooting_date": "2026-11-10",
+        "is_cancelled": false
+    },
+    {
+        "id": 5,
+        "film_id": 1,
+        "scene_number": 2,
+        "location_id": 3,
+        "shooting_date": "2026-11-05",
+        "is_cancelled": false
+    },
+    {
+        "id": 6,
+        "film_id": 2,
+        "scene_number": 2,
+        "location_id": 3,
+        "shooting_date": "2026-11-12",
+        "is_cancelled": false
+    },
+    {
+        "id": 7,
+        "film_id": 2,
+        "scene_number": 3,
+        "location_id": 1,
+        "shooting_date": "2026-11-18",
+        "is_cancelled": false
     }
 ]
