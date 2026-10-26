@@ -34,6 +34,13 @@ def get_shooting_status(days_left: int) -> str:
     return f"До съёмки осталось {days_left} дн."
 
 
+def get_status_text(is_cancelled: bool, days_left: int) -> str:
+    """Вернуть статус съёмки с учётом отмены и числа дней до неё."""
+    if is_cancelled:
+        return "Съёмка отменена"
+    return get_shooting_status(days_left)
+
+
 class Shooting(Entity):
     """Съёмка сцены фильма на локации в определённую дату.
 
@@ -66,9 +73,7 @@ class Shooting(Entity):
     @property
     def status(self) -> str:
         """Текстовый статус съёмки с учётом отмены и даты."""
-        if self._is_cancelled:
-            return "Съёмка отменена"
-        return get_shooting_status(self.days_until())
+        return get_status_text(self._is_cancelled, self.days_until())
 
     def cancel(self) -> None:
         """Отменить съёмку.

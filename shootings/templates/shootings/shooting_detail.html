@@ -19,15 +19,19 @@
                 </p>
                 <p class="card-text">
                     <strong>Фильм:</strong>
-                    <a href="{% url 'films:detail' shooting.film.id %}">{{ shooting.film }}</a>
+                    <a href="{% url 'films:detail' shooting.film_id %}">«{{ shooting.film_title }}»</a>,
+                    реж. {{ shooting.film_director|default:"не указан" }}
                 </p>
                 <p class="card-text">
                     <strong>Сцена:</strong>
-                    {{ shooting.scene }}
+                    №{{ shooting.scene_number }} — {{ shooting.scene_description }}
+                    (группа {{ shooting.crew_size }} чел.)
                 </p>
                 <p class="card-text">
                     <strong>Локация:</strong>
-                    <a href="{% url 'locations:detail' shooting.location.id %}">{{ shooting.location }}</a>
+                    <a href="{% url 'locations:detail' shooting.location_id %}">{{ shooting.location_name }}</a>
+                    ({{ shooting.location_address|default:"адрес не указан" }}),
+                    до {{ shooting.location_capacity }} чел.
                 </p>
                 <p class="card-text">
                     <strong>Статус:</strong>

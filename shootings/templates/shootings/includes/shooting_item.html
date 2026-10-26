@@ -4,8 +4,8 @@
 >
     <span>
         <strong>{{ shooting.shooting_date|date:"d.m.Y" }}</strong> —
-        «{{ shooting.film.title }}», сцена №{{ shooting.scene.number }},
-        {{ shooting.location.name }}
+        «{{ shooting.film_title }}», сцена №{{ shooting.scene_number }},
+        {{ shooting.location_name }}
     </span>
     {% include "shootings/includes/shooting_status.html" %}
 </a>

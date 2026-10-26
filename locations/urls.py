@@ -6,5 +6,6 @@ app_name = "locations"
 
 urlpatterns = [
     path("", views.locations, name="list"),
+    path("free/", views.free_locations, name="free"),
     path("<int:location_id>/", views.location_detail, name="detail"),
 ]

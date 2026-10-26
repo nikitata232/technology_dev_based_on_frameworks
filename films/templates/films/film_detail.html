@@ -13,7 +13,7 @@
         <h1>«{{ film.title }}»</h1>
         <p class="text-muted">Режиссёр: {{ film.director|default:"не указан" }}</p>
 
-        <h2 class="h4">Сцены ({{ film.scenes|length }})</h2>
+        <h2 class="h4">Сцены ({{ scenes|length }})</h2>
         <table class="table table-striped">
             <thead>
                 <tr>
@@ -23,7 +23,7 @@
                 </tr>
             </thead>
             <tbody>
-                {% for scene in film.scenes %}
+                {% for scene in scenes %}
                     <tr>
                         <td>{{ scene.number }}</td>
                         <td>{{ scene.description|default:"—" }}</td>

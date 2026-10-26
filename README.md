@@ -29,18 +29,21 @@
 - Django Template Language (DTL) — шаблоны страниц;
 - HTML5, CSS3, JavaScript — разметка, собственное оформление и поведение интерфейса;
 - Bootstrap 5.3 — базовая вёрстка;
-- JSON — хранение данных;
+- SQLite 3, язык SQL и модуль `sqlite3` — база данных веб-интерфейса;
+- JSON — исходные данные и хранилище консольной версии;
 - pytest — автоматизированные тесты;
 - flake8 — проверка качества кода.
 
 ## Возможности
 
-Веб-интерфейс (ПР5–ПР6, страницы формируются Django-шаблонами):
+Веб-интерфейс (ПР5–ПР7: данные из SQLite, страницы формируются Django-шаблонами):
 
 - главная страница со сводкой (фильмы, локации, активные съёмки), ближайшими съёмками и навигацией;
-- список фильмов и страница фильма со сценами и его съёмками;
-- список локаций (по убыванию вместимости) и страница локации;
+- список фильмов (с числом сцен) и страница фильма со сценами и его съёмками;
+- список локаций (по убыванию вместимости) с подбором по размеру группы (`?capacity=N`) и страница локации;
 - проверка занятости локации на любую дату (`/locations/<id>/?date=ГГГГ-ММ-ДД`);
+- поиск локаций, свободных на дату и вмещающих группу (`/locations/free/?date=…&crew=N`);
+- статистика: итоги по съёмкам, загрузка локаций, самые загруженные локации (порог `?min=N`), съёмки по месяцам, сцены и размер групп по фильмам, сцены без назначенной съёмки;
 - график съёмок со статусами (активна / прошла / отменена), кнопка «Скрыть отменённые» (JavaScript) и страница отдельной съёмки;
 - собственная страница ошибки 404, ответ 404 для несуществующих объектов.
 
@@ -101,7 +104,9 @@ Film ──(scenes)──> Scene
 | `/films/<int:film_id>/` | `films:detail` | `films.views.film_detail` | `films/film_detail.html` |
 | `/locations/` | `locations:list` | `locations.views.locations` | `locations/location_list.html` |
 | `/locations/<int:location_id>/` | `locations:detail` | `locations.views.location_detail` | `locations/location_detail.html` |
+| `/locations/free/` | `locations:free` | `locations.views.free_locations` | `locations/free_locations.html` |
 | `/shootings/` | `shootings:list` | `shootings.views.shootings` | `shootings/shooting_list.html` |
+| `/shootings/statistics/` | `shootings:statistics` | `shootings.views.statistics` | `shootings/statistics.html` |
 | `/shootings/<int:shooting_id>/` | `shootings:detail` | `shootings.views.shooting_detail` | `shootings/shooting_detail.html` |
 
 Если объект не найден, view передаёт в шаблон `None`, шаблон выводит сообщение «… не найден» через `{% if %}/{% else %}`, а ответ получает код 404 (`render(..., status=404)`). Для неизвестных адресов при `DEBUG = False` показывается собственная страница `homepage/404.html` (`handler404 = "homepage.views.page_not_found"`).
@@ -132,7 +137,7 @@ Film ──(scenes)──> Scene
 Данные передаются словарём `context`, например в `films.views.films`:
 
 ```python
-context = {"films": load_films()}
+context = {"films": queries.get_films()}
 return render(request, "films/film_list.html", context)
 ```
 
@@ -140,12 +145,12 @@ return render(request, "films/film_list.html", context)
 
 ### Фильтры
 
-- `{{ films|length }}`, `{{ film.scenes|length }}` — количество элементов;
-- `{{ film.director|default:"не указан" }}` — значение по умолчанию;
-- `{{ shooting.shooting_date|date:"d.m.Y" }}` — форматирование даты (дата съёмки хранится в объекте как `date`);
-- `{{ upcoming_shootings|slice:":3" }}` — три ближайшие съёмки на главной.
+- `{{ films|length }}`, `{{ scenes|length }}` — количество элементов;
+- `{{ film.director|default:"не указан" }}` — значение по умолчанию (в базе `director` может быть `NULL`);
+- `{{ shooting.shooting_date|date:"d.m.Y" }}` — форматирование даты (строка `ГГГГ-ММ-ДД` из SQLite превращается в `date` в `db/queries.py`);
+- `{{ min_capacity|default_if_none:'' }}` — пустое поле формы, если фильтр не задан.
 
-Фильтры отвечают только за представление данных, бизнес-логика (статус, занятость локации) остаётся в классах `models/`.
+Фильтры отвечают только за представление данных, бизнес-логика (статус съёмки, занятость локации) остаётся в Python (`models/`) и SQL (`db/queries.py`).
 
 ### Именованные URL и пространства имён
 
@@ -163,6 +168,82 @@ return render(request, "films/film_list.html", context)
 
 Проверка: `python manage.py findstatic homepage/img/logo.png`.
 
+## База данных SQLite (ПР7)
+
+Веб-интерфейс читает данные из файла `data/kinoplan.sqlite` средствами стандартного модуля `sqlite3`. Django ORM не используется: SQL-запросы написаны вручную.
+
+### Таблицы
+
+```text
+films ──< scenes ──< shootings >── locations
+```
+
+| Таблица | Поле | Тип | Ограничения |
+|---|---|---|---|
+| `films` | `id` | INTEGER | PRIMARY KEY |
+| | `title` | TEXT | NOT NULL |
+| | `director` | TEXT | может быть NULL |
+| `scenes` | `id` | INTEGER | PRIMARY KEY |
+| | `film_id` | INTEGER | NOT NULL, FOREIGN KEY → `films.id` |
+| | `number` | INTEGER | NOT NULL, UNIQUE вместе с `film_id` |
+| | `description` | TEXT | NOT NULL |
+| | `crew_size` | INTEGER | NOT NULL, CHECK > 0 |
+| `locations` | `id` | INTEGER | PRIMARY KEY |
+| | `name` | TEXT | NOT NULL |
+| | `address` | TEXT | может быть NULL |
+| | `capacity` | INTEGER | NOT NULL, CHECK > 0 |
+| `shootings` | `id` | INTEGER | PRIMARY KEY |
+| | `scene_id` | INTEGER | NOT NULL, FOREIGN KEY → `scenes.id` |
+| | `location_id` | INTEGER | NOT NULL, FOREIGN KEY → `locations.id` |
+| | `shooting_date` | TEXT | NOT NULL, формат `ГГГГ-ММ-ДД` |
+| | `is_cancelled` | INTEGER | NOT NULL, DEFAULT 0, CHECK IN (0, 1) |
+
+- В JSON сцены вложены в фильм; в базе это отдельная таблица `scenes` со ссылкой `film_id`. Съёмка ссылается на конкретную сцену (`scene_id`), фильм находится через сцену.
+- Частичный уникальный индекс `idx_shootings_location_date (location_id, shooting_date) WHERE is_cancelled = 0` запрещает две активные съёмки на одной локации в один день. Правило из ПР2–ПР3 теперь проверяет и сама база.
+- `db/database.py → get_connection()` при каждом подключении включает `PRAGMA foreign_keys = ON` (без этого SQLite не проверяет внешние ключи) и `row_factory = sqlite3.Row` (доступ к полям по имени: `row["title"]`, `{{ film.title }}`).
+
+### Файлы
+
+| Файл | Назначение |
+|---|---|
+| `sql/schema.sql` | `CREATE TABLE IF NOT EXISTS …`: таблицы, ключи, ограничения, индекс |
+| `sql/queries.sql` | 25 проверенных в SQLite CLI запросов с комментариями (выборка, WHERE, JOIN, агрегаты, GROUP BY, HAVING) |
+| `db/database.py` | подключение, создание схемы, `fetch_all()`/`fetch_one()` |
+| `db/import_json.py` | перенос данных из `data/*.json` в базу (`executemany`, параметры `?`, `commit`/`rollback`) |
+| `db/queries.py` | запросы веб-интерфейса — функции, которые вызывают Django-представления |
+| `data/kinoplan.sqlite` | файл базы данных |
+
+Импорт читает JSON функциями `storage.py`, поэтому записи проходят ту же проверку, что и в консольной версии. Скрипт можно запускать повторно: схема создаётся с `IF NOT EXISTS`, старые записи удаляются, всё выполняется одной транзакцией. Порядок вставки задаётся внешними ключами: фильмы и сцены, затем локации, затем съёмки. `scene_id` для съёмки находит подзапрос по паре `(film_id, number)`.
+
+### Где запросы используются на сайте
+
+| Страница | Запросы `db/queries.py` | Приёмы SQL |
+|---|---|---|
+| главная | `get_summary`, `get_upcoming_shootings` | COUNT в подзапросах; JOIN + WHERE + LIMIT |
+| `/films/` | `get_films` | LEFT JOIN + GROUP BY + COUNT |
+| `/films/<id>/` | `get_film`, `get_scenes`, `get_film_shootings` | WHERE; JOIN |
+| `/locations/` | `get_locations(min_capacity)` | WHERE capacity >= ? + ORDER BY |
+| `/locations/<id>/` | `get_location`, `is_location_busy`, `get_location_shootings` | WHERE; COUNT; JOIN |
+| `/locations/free/` | `find_free_locations(date, crew)` | подзапрос NOT IN |
+| `/shootings/` | `get_shootings` | JOIN четырёх таблиц |
+| `/shootings/<id>/` | `get_shooting` | JOIN + WHERE |
+| `/shootings/statistics/` | `get_shooting_totals`, `get_location_statistics`, `get_film_statistics`, `get_busy_locations(min)`, `get_shootings_by_month`, `get_unscheduled_scenes` | COUNT/MIN/MAX/AVG/SUM; LEFT JOIN + GROUP BY; HAVING; LEFT JOIN + IS NULL |
+
+Все значения от пользователя (id из URL, дата, размер группы, порог) передаются только параметрами `?`, например:
+
+```python
+fetch_all("""
+    SELECT id, name, address, capacity
+    FROM locations
+    WHERE capacity >= ?
+      AND id NOT IN (SELECT location_id FROM shootings
+                     WHERE shooting_date = ? AND is_cancelled = 0)
+    ORDER BY capacity, name
+""", [crew_size, check_date.isoformat()])
+```
+
+Статус съёмки («Съёмка отменена», «Съёмка уже прошла», «До съёмки осталось N дн.») считают функции ПР1 `get_days_until_shooting()` и `get_status_text()` из `models/shootings.py`, общие для объектов и строк из базы.
+
 ## Структура проекта
 
 ```text
@@ -174,6 +255,14 @@ film_scheduler/
 ├── main.py               — консольная версия приложения
 ├── storage.py            — JSON ↔ объекты
 ├── utils.py              — безопасный ввод чисел, дат и строк
+├── sql/
+│   ├── schema.sql        — создание таблиц
+│   └── queries.sql       — SQL-запросы проекта
+├── db/                   — работа с SQLite (sqlite3)
+│   ├── __init__.py
+│   ├── database.py       — подключение, PRAGMA, row_factory
+│   ├── import_json.py    — перенос JSON → SQLite
+│   └── queries.py        — запросы для представлений
 ├── kinoplan/             — конфигурация Django-проекта
 │   ├── settings.py
 │   ├── urls.py           — корневые маршруты, handler404
@@ -190,9 +279,11 @@ film_scheduler/
 │                           includes/film_card.html
 ├── locations/            — страницы локаций
 │   └── templates/locations/  — location_list.html, location_detail.html,
+│                               free_locations.html,
 │                               includes/location_row.html
 ├── shootings/            — страницы съёмок
 │   └── templates/shootings/  — shooting_list.html, shooting_detail.html,
+│                               statistics.html,
 │                               includes/shooting_status.html,
 │                               includes/shooting_item.html
 ├── models/               — классы предметной области (ПР3)
@@ -202,22 +293,24 @@ film_scheduler/
 │   ├── films.py          — Film, Scene и функции коллекции фильмов
 │   └── shootings.py      — Shooting и функции графика съёмок
 ├── data/
-│   ├── locations.json
+│   ├── locations.json    — исходные данные (JSON)
 │   ├── films.json
-│   └── shootings.json
+│   ├── shootings.json
+│   └── kinoplan.sqlite   — база данных SQLite
 ├── report/               — отчёты по практическим работам
 └── tests/
-    ├── conftest.py       — настройка Django для тестов
+    ├── conftest.py       — настройка Django и временной тестовой базы
     ├── test_locations.py
     ├── test_films.py
     ├── test_shootings.py
     ├── test_storage.py
-    └── test_views.py     — тесты веб-страниц и шаблонов
+    ├── test_views.py     — тесты веб-страниц и шаблонов
+    └── test_database.py  — тесты схемы, импорта, SQL-запросов
 ```
 
 Каталог пакета `models/` (классы ПР3) не следует путать с файлами `models.py` Django-приложений: они пока пустые, Django-модели появятся при переходе на ORM.
 
-Данные по-прежнему хранятся в JSON-файлах и загружаются через `storage.py`; Django ORM, база данных приложения и формы Django пока не используются.
+Веб-интерфейс получает данные из SQLite через `db/`, консольная версия `main.py` по-прежнему работает с JSON через `storage.py`. Django ORM, модели Django и формы Django пока не используются.
 
 ## Формат данных
 
@@ -248,6 +341,14 @@ python3.11 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 python manage.py migrate
+python -m db.import_json      # создать data/kinoplan.sqlite из JSON
+```
+
+Пересоздать базу с нуля: удалить `data/kinoplan.sqlite` и снова выполнить `python -m db.import_json`. Проверить запросы вручную:
+
+```text
+sqlite3 -header -column data/kinoplan.sqlite
+sqlite> .read sql/queries.sql
 ```
 
 ## Запуск
@@ -276,7 +377,8 @@ python manage.py check
 
 ## План развития
 
-- переход от JSON-файлов к реляционной базе данных (SQL), затем к моделям Django ORM;
+- переход от ручных SQL-запросов к моделям Django ORM и миграциям;
+- единое хранилище для консольной и веб-версии (сейчас консоль работает с JSON);
 - формы создания фильмов, локаций и съёмок, отмена съёмки из веб-интерфейса;
 - пользователи и разграничение доступа;
 - разработка API, контейнеризация, CI/CD.
@@ -357,3 +459,16 @@ python manage.py check
 - **статические файлы:** собственные `style.css`, `main.js` (год в подвале, скрытие отменённых съёмок) и `logo.png`; Bootstrap оставлен для базовой вёрстки;
 - **данные:** в JSON добавлены второй фильм, четвёртая локация и будущие съёмки, чтобы на страницах были видны все статусы;
 - **тесты:** в `tests/test_views.py` добавлены проверки используемых шаблонов и include, именованных URL, статических файлов, фильтров, пустых коллекций и удаления `page()` (всего 58 тестов).
+
+### ПР7. Основы баз данных и SQL
+
+Что изменилось по сравнению с ПР6:
+
+- **база данных:** `data/kinoplan.sqlite`, таблицы `films`, `scenes`, `locations`, `shootings` в `sql/schema.sql`; первичные и внешние ключи, `NOT NULL`, `DEFAULT`, `CHECK`, `UNIQUE`; сцены вынесены из фильма в отдельную таблицу;
+- **правило двойного бронирования в базе:** частичный уникальный индекс не даёт назначить две активные съёмки на одну локацию в один день;
+- **работа из Python:** `db/database.py` (подключение, `PRAGMA foreign_keys = ON`, `sqlite3.Row`), `db/import_json.py` (перенос JSON → SQLite через `executemany`, транзакция с `commit`/`rollback`, повторный запуск безопасен);
+- **SQL-запросы:** 25 запросов в `sql/queries.sql`, проверены в SQLite CLI; выборка, WHERE (`=`, `>=`, `BETWEEN`, `LIKE`, `IS NULL`), JOIN и LEFT JOIN, подзапрос `NOT IN`, `COUNT/MIN/MAX/AVG/SUM`, `GROUP BY`, `HAVING`, `ORDER BY`, `LIMIT/OFFSET`, `DISTINCT`;
+- **веб-интерфейс на SQLite:** все страницы получают данные запросами из `db/queries.py` (19 функций), значения передаются параметрами `?`; новые страницы — поиск свободных локаций на дату (`/locations/free/`) и статистика (`/shootings/statistics/`), подбор локаций по размеру группы, пункт «Статистика» в навигации;
+- **предметная логика:** текст статуса вынесен в `get_status_text()` и используется и объектом `Shooting`, и строками из базы; функция ПР1 `check_location_availability()` по-прежнему формирует сообщение о занятости;
+- **данные:** добавлена сцена без съёмки, чтобы запрос `LEFT JOIN … IS NULL` возвращал непустой результат;
+- **тесты:** `conftest.py` собирает временную базу из JSON и подменяет `DB_PATH`; `tests/test_database.py` проверяет схему, внешние ключи и ограничения, импорт, запросы WHERE/JOIN/GROUP BY/HAVING и новые страницы (всего 81 тест).

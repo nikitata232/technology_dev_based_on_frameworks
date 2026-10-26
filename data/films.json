@@ -40,6 +40,11 @@
                 "number": 3,
                 "description": "Прощание на вокзале",
                 "crew_size": 30
+            },
+            {
+                "number": 4,
+                "description": "Эпилог: рассвет над рекой",
+                "crew_size": 15
             }
         ]
     }

@@ -7,7 +7,7 @@
             </p>
         </div>
         <div class="text-end">
-            <span class="badge bg-primary mb-2">сцен: {{ film.scenes|length }}</span><br>
+            <span class="badge bg-primary mb-2">сцен: {{ film.scenes_count }}</span><br>
             <a href="{% url 'films:detail' film.id %}" class="btn btn-sm btn-outline-primary">
                 Подробнее
             </a>

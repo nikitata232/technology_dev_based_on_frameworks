@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Свободные локации — КиноПлан{% endblock %}
+
+{% block content %}
+    <h1>Свободные локации</h1>
+    <p class="text-muted">
+        Подбор локации для съёмки: свободна в выбранную дату и вмещает группу.
+    </p>
+
+    <form method="get" class="row g-2 align-items-end mb-4">
+        <div class="col-auto">
+            <label for="date" class="form-label">Дата съёмки</label>
+            <input
+                type="date"
+                id="date"
+                name="date"
+                class="form-control"
+                value="{{ check_date|date:'Y-m-d' }}"
+                required
+            >
+        </div>
+        <div class="col-auto">
+            <label for="crew" class="form-label">Группа, чел.</label>
+            <input
+                type="number"
+                min="1"
+                id="crew"
+                name="crew"
+                class="form-control"
+                value="{{ crew_size }}"
+            >
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary">Найти</button>
+        </div>
+    </form>
+
+    {% if error %}
+        <div class="alert alert-warning">{{ error }}</div>
+    {% endif %}
+
+    {% if check_date %}
+        <h2 class="h4">
+            {{ check_date|date:"d.m.Y" }}, группа от {{ crew_size }} чел.:
+            найдено {{ locations|length }}
+        </h2>
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Название</th>
+                    <th>Адрес</th>
+                    <th>Вместимость, чел.</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for location in locations %}
+                    {% include "locations/includes/location_row.html" %}
+                {% empty %}
+                    <tr>
+                        <td colspan="3">На выбранную дату подходящих свободных локаций нет.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+
+    <a href="{% url 'locations:list' %}" class="btn btn-outline-secondary mt-3">
+        ← к списку локаций
+    </a>
+{% endblock %}

@@ -29,9 +29,9 @@
                             {{ shooting.shooting_date|date:"d.m.Y" }}
                         </a>
                     </td>
-                    <td>{{ shooting.film.title }}</td>
-                    <td>№{{ shooting.scene.number }}</td>
-                    <td>{{ shooting.location.name }}</td>
+                    <td>{{ shooting.film_title }}</td>
+                    <td>№{{ shooting.scene_number }}</td>
+                    <td>{{ shooting.location_name }}</td>
                     <td>{% include "shootings/includes/shooting_status.html" %}</td>
                 </tr>
             {% empty %}

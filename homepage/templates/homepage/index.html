@@ -15,7 +15,7 @@
         <div class="col-sm-4">
             <div class="card kp-stat text-center">
                 <div class="card-body">
-                    <div class="kp-stat-value">{{ films|length }}</div>
+                    <div class="kp-stat-value">{{ summary.films_count }}</div>
                     фильмов
                 </div>
             </div>
@@ -23,7 +23,7 @@
         <div class="col-sm-4">
             <div class="card kp-stat text-center">
                 <div class="card-body">
-                    <div class="kp-stat-value">{{ locations|length }}</div>
+                    <div class="kp-stat-value">{{ summary.locations_count }}</div>
                     локаций
                 </div>
             </div>
@@ -31,7 +31,7 @@
         <div class="col-sm-4">
             <div class="card kp-stat text-center">
                 <div class="card-body">
-                    <div class="kp-stat-value">{{ active_shootings|length }}</div>
+                    <div class="kp-stat-value">{{ summary.active_count }}</div>
                     активных съёмок
                 </div>
             </div>
@@ -40,7 +40,7 @@
 
     <h2 class="h4">Ближайшие съёмки</h2>
     <div class="list-group mb-4">
-        {% for shooting in upcoming_shootings|slice:":3" %}
+        {% for shooting in upcoming_shootings %}
             {% include "shootings/includes/shooting_item.html" %}
         {% empty %}
             <p>Ближайших съёмок нет.</p>
@@ -50,5 +50,6 @@
     <p>Основные разделы:</p>
     <a href="{% url 'films:list' %}" class="btn btn-primary me-2">Фильмы</a>
     <a href="{% url 'locations:list' %}" class="btn btn-secondary me-2">Локации</a>
-    <a href="{% url 'shootings:list' %}" class="btn btn-outline-dark">График съёмок</a>
+    <a href="{% url 'shootings:list' %}" class="btn btn-outline-dark me-2">График съёмок</a>
+    <a href="{% url 'locations:free' %}" class="btn btn-outline-primary">Найти свободную локацию</a>
 {% endblock %}

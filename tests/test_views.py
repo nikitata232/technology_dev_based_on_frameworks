@@ -6,7 +6,6 @@ from django.test import Client, override_settings
 from django.urls import reverse
 
 from homepage import views as homepage_views
-from models import Film
 
 
 @pytest.fixture
@@ -131,7 +130,7 @@ def test_empty_collections():
 
 
 def test_default_filter():
-    film = Film(5, "Тест", "")
+    film = {"id": 5, "title": "Тест", "director": None, "scenes_count": 0}
     html = render_to_string("films/includes/film_card.html", {"film": film})
     assert "не указан" in html
 

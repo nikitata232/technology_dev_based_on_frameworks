@@ -9,7 +9,7 @@
             >
             КиноПлан
         </a>
-        {% with section=request.resolver_match.app_name %}
+        {% with section=request.resolver_match.app_name page=request.resolver_match.url_name %}
             <div class="navbar-nav">
                 <a
                     class="nav-link{% if section == 'films' %} active{% endif %}"
@@ -20,9 +20,13 @@
                     href="{% url 'locations:list' %}"
                 >Локации</a>
                 <a
-                    class="nav-link{% if section == 'shootings' %} active{% endif %}"
+                    class="nav-link{% if section == 'shootings' and page != 'statistics' %} active{% endif %}"
                     href="{% url 'shootings:list' %}"
                 >График съёмок</a>
+                <a
+                    class="nav-link{% if page == 'statistics' %} active{% endif %}"
+                    href="{% url 'shootings:statistics' %}"
+                >Статистика</a>
             </div>
         {% endwith %}
     </div>

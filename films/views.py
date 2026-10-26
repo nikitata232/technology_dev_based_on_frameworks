@@ -1,33 +1,27 @@
-"""Страницы фильмов и их сцен."""
+"""Страницы фильмов и их сцен (данные из SQLite)."""
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 
-from models.films import find_film_by_id
-from models.shootings import sort_shootings
-from storage import load_films, load_locations, load_shootings
+from db import queries
 
 
 def films(request: HttpRequest) -> HttpResponse:
-    """Страница /films/: список фильмов."""
+    """Страница /films/: список фильмов с количеством сцен."""
     context = {
-        "films": load_films(),
+        "films": queries.get_films(),
     }
     return render(request, "films/film_list.html", context)
 
 
 def film_detail(request: HttpRequest, film_id: int) -> HttpResponse:
     """Страница /films/<id>/: сцены фильма и его съёмки."""
-    films_list = load_films()
-    film = find_film_by_id(films_list, film_id)
-    film_shootings = []
-    if film is not None:
-        shootings = load_shootings(films_list, load_locations())
-        film_shootings = [
-            s for s in sort_shootings(shootings) if s.film is film
-        ]
+    film = queries.get_film(film_id)
     context = {
         "film": film,
-        "film_shootings": film_shootings,
+        "scenes": queries.get_scenes(film_id) if film else [],
+        "film_shootings": (
+            queries.get_film_shootings(film_id) if film else []
+        ),
     }
     return render(
         request,

@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Статистика — КиноПлан{% endblock %}
+
+{% block content %}
+    <h1>Статистика съёмок</h1>
+
+    <div class="row g-3 mb-4">
+        <div class="col-sm-3">
+            <div class="card kp-stat text-center">
+                <div class="card-body">
+                    <div class="kp-stat-value">{{ totals.total }}</div>
+                    всего съёмок
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-3">
+            <div class="card kp-stat text-center">
+                <div class="card-body">
+                    <div class="kp-stat-value">{{ totals.active }}</div>
+                    активных
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-3">
+            <div class="card kp-stat text-center">
+                <div class="card-body">
+                    <div class="kp-stat-value">{{ totals.cancelled }}</div>
+                    отменённых
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-3">
+            <div class="card kp-stat text-center">
+                <div class="card-body">
+                    <div class="kp-stat-period">
+                        {{ totals.first_date|default:"—" }}<br>
+                        {{ totals.last_date|default:"—" }}
+                    </div>
+                    период съёмок
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h2 class="h4">Загрузка локаций</h2>
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Локация</th>
+                <th>Вместимость</th>
+                <th>Активных съёмок</th>
+                <th>Первая</th>
+                <th>Последняя</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in location_stats %}
+                <tr>
+                    <td><a href="{% url 'locations:detail' item.id %}">{{ item.name }}</a></td>
+                    <td>{{ item.capacity }}</td>
+                    <td>{{ item.shootings_count }}</td>
+                    <td>{{ item.first_date|default:"—" }}</td>
+                    <td>{{ item.last_date|default:"—" }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="5">Данные отсутствуют.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <h2 class="h4">Самые загруженные локации</h2>
+            <form method="get" class="row g-2 align-items-center mb-2">
+                <div class="col-auto">
+                    <label for="min" class="col-form-label">Съёмок не меньше:</label>
+                </div>
+                <div class="col-auto">
+                    <input type="number" min="1" id="min" name="min" class="form-control" value="{{ min_count }}">
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary">Показать</button>
+                </div>
+            </form>
+            <ul class="list-group mb-4">
+                {% for item in busy_locations %}
+                    <li class="list-group-item d-flex justify-content-between">
+                        {{ item.name }}
+                        <span class="badge bg-primary">{{ item.shootings_count }}</span>
+                    </li>
+                {% empty %}
+                    <li class="list-group-item">Нет локаций с {{ min_count }} и более активными съёмками.</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="col-lg-6">
+            <h2 class="h4">Съёмки по месяцам</h2>
+            <ul class="list-group mb-4">
+                {% for item in by_month %}
+                    <li class="list-group-item d-flex justify-content-between">
+                        {{ item.month }}
+                        <span class="badge bg-primary">{{ item.shootings_count }}</span>
+                    </li>
+                {% empty %}
+                    <li class="list-group-item">Активных съёмок нет.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <h2 class="h4">Фильмы: сцены и размер групп</h2>
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Фильм</th>
+                <th>Сцен</th>
+                <th>Средняя группа, чел.</th>
+                <th>Максимальная группа, чел.</th>
+                <th>Сумма групп по сценам, чел.</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in film_stats %}
+                <tr>
+                    <td><a href="{% url 'films:detail' item.id %}">{{ item.title }}</a></td>
+                    <td>{{ item.scenes_count }}</td>
+                    <td>{{ item.avg_crew|default:"—" }}</td>
+                    <td>{{ item.max_crew|default:"—" }}</td>
+                    <td>{{ item.total_crew|default:"—" }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="5">Данные отсутствуют.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2 class="h4">Сцены без назначенной съёмки</h2>
+    <ul class="list-group">
+        {% for scene in unscheduled_scenes %}
+            <li class="list-group-item">
+                <a href="{% url 'films:detail' scene.film_id %}">«{{ scene.film_title }}»</a>,
+                сцена №{{ scene.scene_number }} — {{ scene.description }}
+                (группа {{ scene.crew_size }} чел.)
+            </li>
+        {% empty %}
+            <li class="list-group-item">Все сцены запланированы.</li>
+        {% endfor %}
+    </ul>
+{% endblock %}

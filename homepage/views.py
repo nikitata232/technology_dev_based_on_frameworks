@@ -1,24 +1,17 @@
 """Главная страница и собственная страница ошибки 404."""
+from datetime import date
+
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 
-from models.shootings import sort_shootings
-from storage import load_films, load_locations, load_shootings
+from db import queries
 
 
 def index(request: HttpRequest) -> HttpResponse:
-    """Главная страница: сводка по данным и ближайшие съёмки."""
-    films = load_films()
-    locations = load_locations()
-    shootings = sort_shootings(load_shootings(films, locations))
-    active_shootings = [s for s in shootings if not s.is_cancelled]
+    """Главная страница: сводка по базе данных и ближайшие съёмки."""
     context = {
-        "films": films,
-        "locations": locations,
-        "active_shootings": active_shootings,
-        "upcoming_shootings": [
-            s for s in active_shootings if s.days_until() >= 0
-        ],
+        "summary": queries.get_summary(),
+        "upcoming_shootings": queries.get_upcoming_shootings(date.today()),
     }
     return render(request, "homepage/index.html", context)
 

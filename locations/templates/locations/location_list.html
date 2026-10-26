@@ -4,8 +4,42 @@
 
 {% block content %}
     <h1>Локации</h1>
+    <form method="get" class="row g-2 align-items-center mb-3">
+        <div class="col-auto">
+            <label for="capacity" class="col-form-label">Группа, чел.:</label>
+        </div>
+        <div class="col-auto">
+            <input
+                type="number"
+                min="1"
+                id="capacity"
+                name="capacity"
+                class="form-control"
+                value="{{ min_capacity|default_if_none:'' }}"
+            >
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary">Подобрать</button>
+            <a href="{% url 'locations:list' %}" class="btn btn-link">Сбросить</a>
+        </div>
+        <div class="col-auto ms-auto">
+            <a href="{% url 'locations:free' %}" class="btn btn-outline-primary">
+                Найти свободную локацию на дату
+            </a>
+        </div>
+    </form>
+
+    {% if bad_capacity %}
+        <div class="alert alert-warning">Размер группы должен быть целым числом больше 0.</div>
+    {% endif %}
+
     <p class="text-muted">
-        Всего локаций: {{ locations|length }}. Отсортированы по убыванию вместимости.
+        {% if min_capacity %}
+            Вмещают группу от {{ min_capacity }} чел.: {{ locations|length }}.
+        {% else %}
+            Всего локаций: {{ locations|length }}.
+        {% endif %}
+        Отсортированы по убыванию вместимости.
     </p>
 
     <table class="table table-hover">
