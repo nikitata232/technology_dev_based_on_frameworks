@@ -1,0 +1,19 @@
+[
+    {
+        "id": 1,
+        "title": "Полночный экспресс",
+        "director": "А. Сергеев",
+        "scenes": [
+            {
+                "number": 1,
+                "description": "Прибытие поезда",
+                "crew_size": 35
+            },
+            {
+                "number": 2,
+                "description": "Разговор в купе",
+                "crew_size": 10
+            }
+        ]
+    }
+]

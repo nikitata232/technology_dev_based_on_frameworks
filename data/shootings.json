@@ -1,0 +1,18 @@
+[
+    {
+        "id": 1,
+        "film_id": 1,
+        "scene_number": 1,
+        "location_id": 1,
+        "shooting_date": "2026-10-20",
+        "is_cancelled": false
+    },
+    {
+        "id": 2,
+        "film_id": 1,
+        "scene_number": 2,
+        "location_id": 3,
+        "shooting_date": "2026-10-22",
+        "is_cancelled": true
+    }
+]
