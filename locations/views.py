@@ -25,7 +25,10 @@ def locations(request: HttpRequest) -> HttpResponse:
     """Страница /locations/: локации, при ?capacity=N — вмещающие N чел."""
     min_capacity = parse_positive_int(request.GET.get("capacity"))
     context = {
-        "locations": queries.get_locations(min_capacity or 0),
+        "locations": queries.get_locations(
+            min_capacity or 0, request.GET.get("q", "").strip()[:200],
+        ),
+        "search": request.GET.get("q", ""),
         "min_capacity": min_capacity,
         "bad_capacity": "capacity" in request.GET and min_capacity is None,
     }

@@ -4,6 +4,10 @@
 
 {% block content %}
     <h1>Фильмы</h1>
+    <form method="get" class="input-group mb-3">
+        <input name="q" value="{{ search }}" class="form-control" placeholder="Название фильма" aria-label="Название фильма">
+        <button class="btn btn-primary">Найти</button>
+    </form>
     <p class="text-muted">Всего фильмов: {{ films|length }}</p>
 
     {% for film in films %}

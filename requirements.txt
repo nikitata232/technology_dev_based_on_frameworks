@@ -1,3 +1,5 @@
 Django==5.2.*
 pytest>=8.0
 flake8>=7.0
+pytest-django>=4.9,<5
+django-debug-toolbar>=6,<7

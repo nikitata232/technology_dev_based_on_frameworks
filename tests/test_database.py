@@ -1,5 +1,4 @@
 """Тесты слоя базы данных (ПР7): схема, импорт, SQL-запросы, страницы."""
-import shutil
 import sqlite3
 from contextlib import closing
 from datetime import date
@@ -72,11 +71,11 @@ def test_double_booking_rejected():
 
 def test_rows_accessible_by_name():
     film = queries.get_film(1)
-    assert film["title"] == "Полночный экспресс"
+    assert film.title == "Полночный экспресс"
 
 
 def test_get_locations_where_capacity():
-    names = [row["name"] for row in queries.get_locations(50)]
+    names = [row.name for row in queries.get_locations(50)]
     assert names == ["Студия «Север»", "Набережная парка"]
 
 
@@ -87,20 +86,20 @@ def test_location_busy_ignores_cancelled():
 
 def test_free_locations():
     free = queries.find_free_locations(date(2026, 11, 10), 1)
-    assert [row["id"] for row in free] == [3, 4]
+    assert [row.id for row in free] == [3, 4]
     free = queries.find_free_locations(date(2026, 11, 10), 40)
-    assert [row["name"] for row in free] == ["Набережная парка"]
+    assert [row.name for row in free] == ["Набережная парка"]
 
 
 def test_shootings_join_and_status():
     shooting = queries.get_shooting(2)
-    assert shooting["film_title"] == "Полночный экспресс"
-    assert shooting["location_name"] == "Квартира на Арбате"
-    assert shooting["status"] == "Съёмка отменена"
+    assert shooting.film_title == "Полночный экспресс"
+    assert shooting.location_name == "Квартира на Арбате"
+    assert shooting.status == "Съёмка отменена"
 
 
 def test_films_group_by_scene_count():
-    counts = {row["title"]: row["scenes_count"] for row in queries.get_films()}
+    counts = {row.title: row.scenes_count for row in queries.get_films()}
     assert counts == {"Полночный экспресс": 3, "Северное сияние": 4}
 
 
@@ -112,10 +111,10 @@ def test_location_statistics_left_join_keeps_zero():
 
 
 def test_busy_locations_having():
-    names = [row["name"] for row in queries.get_busy_locations(2)]
+    names = [row.name for row in queries.get_busy_locations(2)]
     assert names == ["Вокзал, павильон 3", "Квартира на Арбате"]
     assert len(queries.get_busy_locations(3)) == 1
-    assert queries.get_busy_locations(10) == []
+    assert not queries.get_busy_locations(10)
 
 
 def test_unscheduled_scenes_is_null():
@@ -134,20 +133,15 @@ def test_totals_aggregates():
 def test_missing_database_message(monkeypatch, tmp_path):
     monkeypatch.setattr(database, "DB_PATH", str(tmp_path / "none.sqlite"))
     with pytest.raises(FileNotFoundError, match="db.import_json"):
-        queries.get_films()
+        database.fetch_all("SELECT * FROM films")
 
 
 # --- страницы ---
 
 def test_page_shows_data_from_database(client, monkeypatch, tmp_path,
                                        test_db_path):
-    copy = str(tmp_path / "copy.sqlite")
-    shutil.copy(test_db_path, copy)
-    with closing(database.get_connection(copy)) as conn:
-        conn.execute("UPDATE locations SET name = 'Изменено в SQLite'"
-                     " WHERE id = 1")
-        conn.commit()
-    monkeypatch.setattr(database, "DB_PATH", copy)
+    from locations.models import Location
+    Location.objects.filter(pk=1).update(name="Изменено в SQLite")
     assert "Изменено в SQLite" in client.get("/locations/").content.decode()
 
 

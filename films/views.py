@@ -8,7 +8,8 @@ from db import queries
 def films(request: HttpRequest) -> HttpResponse:
     """Страница /films/: список фильмов с количеством сцен."""
     context = {
-        "films": queries.get_films(),
+        "films": queries.get_films(request.GET.get("q", "").strip()[:200]),
+        "search": request.GET.get("q", ""),
     }
     return render(request, "films/film_list.html", context)
 

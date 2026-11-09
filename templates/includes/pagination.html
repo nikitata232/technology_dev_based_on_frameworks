@@ -1,0 +1,11 @@
+{% if page_obj.paginator.num_pages > 1 %}
+<nav aria-label="Страницы графика" class="d-flex gap-3 align-items-center my-3">
+    {% if page_obj.has_previous %}
+        <a href="?{{ pagination_query }}&amp;page={{ page_obj.previous_page_number }}">← Назад</a>
+    {% endif %}
+    <span>Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }} (всего {{ page_obj.paginator.count }})</span>
+    {% if page_obj.has_next %}
+        <a href="?{{ pagination_query }}&amp;page={{ page_obj.next_page_number }}">Вперёд →</a>
+    {% endif %}
+</nav>
+{% endif %}
