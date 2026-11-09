@@ -23,8 +23,8 @@ def reschedule_shooting(shooting, shooting_date):
 
 
 def cancel_shooting(shooting):
-    shooting.is_cancelled = True
-    shooting.save(update_fields=["is_cancelled"])
+    shooting.status = Shooting.Status.CANCELLED
+    shooting.save(update_fields=["status"])
 
 
 def delete_cancelled_shooting(shooting):

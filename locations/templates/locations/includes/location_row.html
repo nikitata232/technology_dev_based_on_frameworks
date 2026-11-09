@@ -1,6 +1,6 @@
 <tr>
     <td>
-        <a href="{% url 'locations:detail' location.id %}">
+        <a href="{{ location.get_absolute_url }}">
             {{ location.name|default:"Без названия" }}
         </a>
     </td>

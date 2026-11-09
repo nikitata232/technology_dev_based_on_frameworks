@@ -9,20 +9,20 @@ from shootings.models import Shooting
 
 def shooting_rows(queryset):
     # Один JOIN вместо отдельного запроса для каждой сцены и локации.
-    return queryset.select_related("scene__film", "location")
+    return queryset.with_related().with_capacity_margin()
 
 
 def get_summary():
     return {
         "films_count": Film.objects.count(),
         "locations_count": Location.objects.count(),
-        "active_count": Shooting.objects.filter(is_cancelled=False).count(),
+        "active_count": Shooting.objects.active().count(),
     }
 
 
 def get_upcoming_shootings(today, limit=3):
     return shooting_rows(Shooting.objects.filter(
-        is_cancelled=False, shooting_date__gte=today,
+        status=Shooting.Status.ACTIVE, shooting_date__gte=today,
     ))[:limit]
 
 
@@ -55,8 +55,8 @@ def get_location(location_id):
 
 
 def is_location_busy(location_id, check_date):
-    return Shooting.objects.filter(
-        location_id=location_id, shooting_date=check_date, is_cancelled=False,
+    return Shooting.objects.active().on_date(check_date).filter(
+        location_id=location_id,
     ).exists()
 
 
@@ -65,11 +65,8 @@ def get_location_shootings(location_id):
 
 
 def find_free_locations(check_date, crew_size):
-    busy = Shooting.objects.filter(
-        shooting_date=check_date, is_cancelled=False,
-    ).values("location_id")
-    return Location.objects.filter(capacity__gte=crew_size).exclude(
-        pk__in=busy,
+    return Location.objects.filter(capacity__gte=crew_size).available_on(
+        check_date,
     ).order_by("capacity", "name", "pk")
 
 
@@ -88,8 +85,9 @@ def display_date(value):
 def get_shooting_totals():
     totals = Shooting.objects.aggregate(
         total=Count("pk"),
-        active=Count("pk", filter=Q(is_cancelled=False)),
-        cancelled=Count("pk", filter=Q(is_cancelled=True)),
+        active=Count("pk", filter=Q(status="active")),
+        cancelled=Count("pk", filter=Q(status="cancelled")),
+        completed=Count("pk", filter=Q(status="completed")),
         first_date=Min("shooting_date"), last_date=Max("shooting_date"),
     )
     for key in ("first_date", "last_date"):
@@ -98,13 +96,14 @@ def get_shooting_totals():
 
 
 def get_location_statistics():
-    active = Q(shootings__is_cancelled=False)
+    active = Q(shootings__status="active")
     rows = Location.objects.annotate(
         shootings_count=Count("shootings", filter=active),
         first_date=Min("shootings__shooting_date", filter=active),
         last_date=Max("shootings__shooting_date", filter=active),
     ).order_by("-shootings_count", "name").values(
         "id", "name", "capacity", "shootings_count", "first_date", "last_date",
+        "slug",
     )
     for row in rows:
         row["first_date"] = display_date(row["first_date"])
@@ -122,20 +121,20 @@ def get_film_statistics():
 def get_busy_locations(min_count):
     return Location.objects.annotate(
         shootings_count=Count("shootings", filter=Q(
-            shootings__is_cancelled=False,
+            shootings__status="active",
         )),
     ).filter(shootings_count__gte=min_count).order_by("-shootings_count", "pk")
 
 
 def get_shootings_by_month():
-    rows = Shooting.objects.filter(is_cancelled=False).order_by().annotate(
+    rows = Shooting.objects.active().order_by().annotate(
         month=TruncMonth("shooting_date"),
     ).values("month").annotate(shootings_count=Count("pk")).order_by("month")
     return [{**row, "month": row["month"].strftime("%m.%Y")} for row in rows]
 
 
 def get_unscheduled_scenes():
-    planned = Shooting.objects.filter(is_cancelled=False).values("scene_id")
+    planned = Shooting.objects.active().values("scene_id")
     return Scene.objects.exclude(pk__in=planned).values(
         "film_id", "description", "crew_size",
         film_title=F("film__title"), scene_number=F("number"),

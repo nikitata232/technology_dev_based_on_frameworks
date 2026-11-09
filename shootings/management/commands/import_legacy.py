@@ -5,6 +5,7 @@ from pathlib import Path
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
+from django.utils import timezone
 
 from films.models import Film, Scene
 from locations.models import Location
@@ -46,7 +47,15 @@ class Command(BaseCommand):
             for row in conn.execute("SELECT * FROM scenes"):
                 Scene.objects.create(**dict(row))
             for row in conn.execute("SELECT * FROM shootings"):
-                Shooting.objects.create(**dict(row))
+                data = dict(row)
+                cancelled = data.pop("is_cancelled")
+                data["status"] = (
+                    Shooting.Status.CANCELLED if cancelled else
+                    Shooting.Status.COMPLETED
+                    if data["shooting_date"] < timezone.localdate().isoformat()
+                    else Shooting.Status.ACTIVE
+                )
+                Shooting.objects.create(**data)
         except (sqlite3.Error, KeyError) as error:
             raise CommandError(f"Ошибка источника: {error}") from error
         finally:

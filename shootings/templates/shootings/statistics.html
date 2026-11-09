@@ -31,6 +31,11 @@
             </div>
         </div>
         <div class="col-sm-3">
+            <div class="card kp-stat text-center"><div class="card-body">
+                <div class="kp-stat-value">{{ totals.completed }}</div>завершённых
+            </div></div>
+        </div>
+        <div class="col-sm-3">
             <div class="card kp-stat text-center">
                 <div class="card-body">
                     <div class="kp-stat-period">
@@ -135,7 +140,7 @@
         </tbody>
     </table>
 
-    <h2 class="h4">Сцены без назначенной съёмки</h2>
+    <h2 class="h4">Сцены без активной съёмки</h2>
     <ul class="list-group">
         {% for scene in unscheduled_scenes %}
             <li class="list-group-item">

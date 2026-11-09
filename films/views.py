@@ -1,4 +1,4 @@
-"""Страницы фильмов и их сцен (данные из SQLite)."""
+"""Страницы фильмов и их сцен (Django ORM)."""
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 

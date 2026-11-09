@@ -52,7 +52,7 @@ def test_crud_and_capacity_validation():
 
 
 def test_uniqueness_enforced_by_database():
-    original = Shooting.objects.get(pk=1)
+    original = Shooting.objects.active().first()
     with pytest.raises(IntegrityError), transaction.atomic():
         Shooting.objects.create(
             scene=original.scene, location=original.location,
@@ -100,6 +100,10 @@ def test_search_across_fields():
 
 
 def test_filters_sort_and_pagination_together():
+    Shooting.objects.bulk_create([
+        Shooting(scene_id=1, location_id=1, shooting_date=date(2030, 1, day))
+        for day in (1, 2)
+    ])
     response = Client().get("/shootings/?status=active&sort=-date")
     assert response.status_code == 200
     assert response.context["page_obj"].paginator.count == 6
@@ -125,3 +129,24 @@ def test_filtered_film_search():
     assert all(s.film_id == 1 and s.location_id == 3
                for s in response.context["shootings"])
     assert response.context["page_obj"].paginator.count == 2
+
+
+def test_failed_import_rolls_back_all_rows(tmp_path, test_db_path):
+    import shutil
+    import sqlite3
+    Shooting.objects.all().delete()
+    Scene.objects.all().delete()
+    Film.objects.all().delete()
+    Location.objects.all().delete()
+    source = tmp_path / "broken.sqlite"
+    shutil.copy(test_db_path, source)
+    conn = sqlite3.connect(source)
+    conn.execute("PRAGMA ignore_check_constraints=ON")
+    conn.execute("UPDATE scenes SET crew_size=0 WHERE id=1")
+    conn.commit()
+    conn.close()
+    with pytest.raises(IntegrityError):
+        call_command("import_legacy", source=source)
+    assert Film.objects.count() == 0
+    assert Scene.objects.count() == 0
+    assert Location.objects.count() == 0

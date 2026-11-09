@@ -1,14 +1,16 @@
 """Страницы локаций, проверка занятости и поиск свободных локаций.
 
-Данные берутся из SQLite (db/queries.py).
+Данные получаются через Django ORM (db/queries.py).
 """
 from datetime import date
 from typing import Optional
 
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
+from django.utils import timezone
 
 from db import queries
+from .models import Location
 from models.shootings import check_location_availability
 
 
@@ -35,13 +37,16 @@ def locations(request: HttpRequest) -> HttpResponse:
     return render(request, "locations/location_list.html", context)
 
 
-def location_detail(request: HttpRequest, location_id: int) -> HttpResponse:
+def location_detail(request, location_id=None, slug=None):
     """Страница /locations/<id>/: карточка локации и её занятость.
 
     Дату проверки можно передать GET-параметром ?date=ГГГГ-ММ-ДД,
     по умолчанию проверяется текущая дата.
     """
-    location = queries.get_location(location_id)
+    location = (Location.objects.filter(slug=slug).first() if slug
+                else queries.get_location(location_id))
+    if location is not None:
+        location_id = location.pk
     if location is None:
         return render(
             request,
@@ -54,7 +59,7 @@ def location_detail(request: HttpRequest, location_id: int) -> HttpResponse:
     try:
         check_date = date.fromisoformat(request.GET.get("date", ""))
     except ValueError:
-        check_date = date.today()
+        check_date = timezone.localdate()
         bad_date = "date" in request.GET
 
     is_busy = queries.is_location_busy(location_id, check_date)

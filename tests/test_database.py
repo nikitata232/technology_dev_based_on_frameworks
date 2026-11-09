@@ -80,7 +80,8 @@ def test_get_locations_where_capacity():
 
 
 def test_location_busy_ignores_cancelled():
-    assert queries.is_location_busy(1, date(2026, 10, 20))
+    assert queries.is_location_busy(1, date(2026, 11, 10))
+    assert not queries.is_location_busy(1, date(2026, 10, 20))
     assert not queries.is_location_busy(3, date(2026, 10, 22))
 
 
@@ -95,7 +96,7 @@ def test_shootings_join_and_status():
     shooting = queries.get_shooting(2)
     assert shooting.film_title == "Полночный экспресс"
     assert shooting.location_name == "Квартира на Арбате"
-    assert shooting.status == "Съёмка отменена"
+    assert shooting.status_text == "Съёмка отменена"
 
 
 def test_films_group_by_scene_count():
@@ -106,27 +107,27 @@ def test_films_group_by_scene_count():
 def test_location_statistics_left_join_keeps_zero():
     stats = {row["name"]: row["shootings_count"]
              for row in queries.get_location_statistics()}
-    assert stats["Вокзал, павильон 3"] == 3
+    assert stats["Вокзал, павильон 3"] == 2
     assert stats["Набережная парка"] == 0
 
 
 def test_busy_locations_having():
     names = [row.name for row in queries.get_busy_locations(2)]
-    assert names == ["Вокзал, павильон 3", "Квартира на Арбате"]
-    assert len(queries.get_busy_locations(3)) == 1
+    assert names == ["Вокзал, павильон 3"]
+    assert len(queries.get_busy_locations(3)) == 0
     assert not queries.get_busy_locations(10)
 
 
 def test_unscheduled_scenes_is_null():
     rows = queries.get_unscheduled_scenes()
-    assert [row["description"] for row in rows] == [
-        "Эпилог: рассвет над рекой"]
+    assert "Эпилог: рассвет над рекой" in [row["description"] for row in rows]
+    assert len(rows) == 3
 
 
 def test_totals_aggregates():
     totals = queries.get_shooting_totals()
     assert (totals["total"], totals["active"], totals["cancelled"]) == (
-        7, 6, 1)
+        7, 4, 1)
     assert totals["first_date"] == "20.10.2026"
 
 

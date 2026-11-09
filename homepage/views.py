@@ -1,8 +1,8 @@
 """Главная страница и собственная страница ошибки 404."""
-from datetime import date
 
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
+from django.utils import timezone
 
 from db import queries
 
@@ -11,7 +11,9 @@ def index(request: HttpRequest) -> HttpResponse:
     """Главная страница: сводка по базе данных и ближайшие съёмки."""
     context = {
         "summary": queries.get_summary(),
-        "upcoming_shootings": queries.get_upcoming_shootings(date.today()),
+        "upcoming_shootings": queries.get_upcoming_shootings(
+            timezone.localdate(),
+        ),
     }
     return render(request, "homepage/index.html", context)
 

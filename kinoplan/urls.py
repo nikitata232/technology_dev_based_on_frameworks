@@ -3,6 +3,7 @@
 Адреса распределяются по приложениям функцией include():
 часть адреса указывается здесь, остальное — в urls.py приложения.
 """
+from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
 
@@ -15,3 +16,6 @@ urlpatterns = [
 ]
 
 handler404 = "homepage.views.page_not_found"
+
+if settings.ENABLE_DEBUG_TOOLBAR:
+    urlpatterns += [path("__debug__/", include("debug_toolbar.urls"))]

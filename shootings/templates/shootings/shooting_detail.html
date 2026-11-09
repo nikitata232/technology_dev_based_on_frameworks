@@ -29,10 +29,11 @@
                 </p>
                 <p class="card-text">
                     <strong>Локация:</strong>
-                    <a href="{% url 'locations:detail' shooting.location_id %}">{{ shooting.location_name }}</a>
+                    <a href="{{ shooting.location.get_absolute_url }}">{{ shooting.location_name }}</a>
                     ({{ shooting.location_address|default:"адрес не указан" }}),
                     до {{ shooting.location_capacity }} чел.
                 </p>
+                <p>Резерв вместимости: {{ shooting.capacity_margin }} чел.</p>
                 <p class="card-text">
                     <strong>Статус:</strong>
                     {% include "shootings/includes/shooting_status.html" %}

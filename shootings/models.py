@@ -6,8 +6,17 @@ from django.utils import timezone
 
 from models.shootings import get_status_text
 
+from .managers import ShootingManager
+
 
 class Shooting(models.Model):
+    class Status(models.TextChoices):
+        ACTIVE = "active", "Активна"
+        CANCELLED = "cancelled", "Отменена"
+        COMPLETED = "completed", "Завершена"
+
+    objects = ShootingManager()
+
     scene = models.ForeignKey(
         "films.Scene", on_delete=models.PROTECT, related_name="shootings",
         verbose_name="Сцена",
@@ -17,16 +26,24 @@ class Shooting(models.Model):
         related_name="shootings", verbose_name="Локация",
     )
     shooting_date = models.DateField("Дата съёмки")
-    is_cancelled = models.BooleanField("Отменена", default=False)
+    status = models.CharField(
+        "Статус", max_length=12, choices=Status.choices, default=Status.ACTIVE,
+    )
 
     class Meta:
         ordering = ("shooting_date", "pk")
         verbose_name = "Съёмка"
         verbose_name_plural = "Съёмки"
         constraints = [
+            models.CheckConstraint(
+                condition=models.Q(
+                    status__in=["active", "cancelled", "completed"],
+                ),
+                name="valid_shooting_status",
+            ),
             models.UniqueConstraint(
                 fields=("location", "shooting_date"),
-                condition=models.Q(is_cancelled=False),
+                condition=models.Q(status="active"),
                 name="unique_active_location_date",
                 violation_error_message="Локация уже занята на эту дату.",
             ),
@@ -43,8 +60,18 @@ class Shooting(models.Model):
         return (self.shooting_date - timezone.localdate()).days
 
     @property
-    def status(self):
+    def status_text(self):
+        if self.status == self.Status.COMPLETED:
+            return "Съёмка завершена"
         return get_status_text(self.is_cancelled, self.days_until)
+
+    @property
+    def is_cancelled(self):
+        return self.status == self.Status.CANCELLED
+
+    @property
+    def is_completed(self):
+        return self.status == self.Status.COMPLETED
 
     @property
     def film_id(self):

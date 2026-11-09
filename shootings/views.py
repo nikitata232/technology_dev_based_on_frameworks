@@ -1,6 +1,5 @@
-"""Страницы графика съёмок и статистики (данные из SQLite)."""
+"""Страницы графика съёмок и статистики (Django ORM)."""
 from django.core.paginator import Paginator
-from django.db.models import Q
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 
@@ -14,11 +13,7 @@ def shootings(request: HttpRequest) -> HttpResponse:
     queryset = queries.get_shootings()
     search = request.GET.get("q", "").strip()[:200]
     if search:
-        queryset = queryset.filter(
-            Q(scene__film__title__icontains=search)
-            | Q(location__name__icontains=search)
-            | Q(scene__description__icontains=search)
-        )
+        queryset = queryset.search(search)
     errors = []
     for key, field in (
         ("film", "scene__film_id"), ("location", "location_id"),
@@ -34,8 +29,8 @@ def shootings(request: HttpRequest) -> HttpResponse:
             else:
                 queryset = queryset.filter(**{field: value})
     state = request.GET.get("status", "")
-    if state in ("active", "cancelled"):
-        queryset = queryset.filter(is_cancelled=(state == "cancelled"))
+    if state in ("active", "cancelled", "completed"):
+        queryset = queryset.filter(status=state)
     elif state:
         errors.append("Неизвестный статус.")
     raw_date = request.GET.get("date", "")
@@ -89,7 +84,7 @@ def statistics(request: HttpRequest) -> HttpResponse:
     """Страница /shootings/statistics/: агрегаты и группировки.
 
     Порог «загруженных» локаций задаётся GET-параметром ?min=N
-    и передаётся в запрос с HAVING параметром.
+    и применяется к аннотированному счётчику ORM.
     """
     try:
         min_count = max(int(request.GET.get("min", "")), 1)

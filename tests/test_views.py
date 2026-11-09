@@ -30,7 +30,7 @@ def test_location_page_shows_data(client):
 
 
 def test_location_busy_on_shooting_date(client):
-    html = client.get("/locations/1/?date=2026-10-20").content.decode()
+    html = client.get("/locations/1/?date=2026-11-10").content.decode()
     assert "Локация занята на выбранную дату" in html
 
 

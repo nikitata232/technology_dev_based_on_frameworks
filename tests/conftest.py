@@ -27,7 +27,10 @@ def use_test_db(monkeypatch, test_db_path):
 
 
 @pytest.fixture(autouse=True)
-def orm_data(db, test_db_path):
+def orm_data(db, test_db_path, monkeypatch):
     """Каждый тест получает независимую копию данных через ORM."""
+    from datetime import date
+    from django.utils import timezone
     from django.core.management import call_command
+    monkeypatch.setattr(timezone, "localdate", lambda: date(2026, 11, 9))
     call_command("import_legacy", source=test_db_path, verbosity=0)
